@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "bash -c 'if [ -f .faro/state.md ]; then echo \"=== FARO STATE ===\"; cat .faro/state.md; echo \"\"; echo \"=== ULTIMI LOG ===\"; tail -30 .faro/log.md 2>/dev/null || echo \"(nessun log)\"; fi'"
+      }
+    ]
+  }
+}

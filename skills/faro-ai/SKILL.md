@@ -1,0 +1,91 @@
+---
+name: faro-ai
+description: |
+  Pattern AI/LLM: API Anthropic/OpenAI, streaming, RAG, prompt engineering, Vercel AI SDK.
+  Trigger: "ai", "llm", "claude api", "openai", "rag", "embedding", "streaming chat"
+---
+
+# faro-ai — LLM · Streaming · RAG · Tool Calling · AI Agents
+
+**Lingua:** Sempre italiano. Riferimenti ufficiali:
+- Vercel AI SDK: https://ai-sdk.dev
+- Anthropic SDK: https://docs.anthropic.com/en/api/getting-started
+- Vercel AI Gateway: https://vercel.com/docs/ai-gateway
+
+**Versione:** Tutti i pattern usano **Vercel AI SDK v6**. Consulta sempre `node_modules/ai/docs/` prima di scrivere codice: l'API cambia spesso.
+
+## QUANDO USARE
+
+- Chat con streaming (chatbot, assistente AI)
+- Text generation, classification, extraction strutturata
+- Analisi immagini (vision)
+- RAG (risponde basandosi su documenti tuoi)
+- Tool calling / AI agents che eseguono azioni
+- Output strutturato (JSON garantito con schema Zod)
+
+## FLUSSO DECISIONALE
+
+```
+App Next.js + streaming UI     → Vercel AI SDK v6 (useChat)
+Controllo totale sul prompt    → Anthropic SDK diretto
+Multi-provider / switch facile → Vercel AI SDK v6 (cambia provider con 1 riga)
+Python / FastAPI               → Anthropic SDK Python
+Deploy su Vercel               → Usa AI Gateway (OIDC auth, cost tracking, failover)
+
+Scelta modello:
+Classificazione / extraction rapida → claude-haiku-4.5 (12x più economico)
+Chat / RAG / tool calling           → claude-sonnet-4.6 (default)
+Analisi complessa / ragionamento    → claude-opus-4.6
+```
+
+## REGOLE CHIAVE
+
+1. **Credenziali AI via `vercel env pull`** (AI Gateway su Vercel) — mai hardcoded
+2. **`maxTokens` sempre impostato** — evita costi illimitati per risposta
+3. **Rate limiting per utente** (o IP per anonimi) — obbligatorio
+4. **Input validation + lunghezza massima** prima di chiamare il modello
+5. **System prompt con scope chiaro + anti-injection** — mai omettere
+6. **Streaming per risposte lunghe** — UX migliore, non aspettare risposta completa
+7. **Errori gestiti**: timeout, rate limit provider, risposta malformata
+8. **Tool calling: ogni tool verifica auth** prima di eseguire
+9. **RAG: cita le fonti** nella risposta, non inventare
+10. **AI SDK v6 breaking changes**: `useChat` usa `transport`, `message.parts` non `content`, `stopWhen: stepCountIs(N)` non `maxSteps`
+
+## FLUSSO OPERATIVO
+
+1. **Scegli SDK**: Vercel AI SDK (consigliato) o Anthropic diretto
+2. **Setup provider**: AI Gateway su Vercel o env var locali
+3. **Modello**: haiku per classificazione, sonnet per chat, opus per ragionamento
+4. **Rate limit**: Upstash per user/IP
+5. **Streaming**: route `/api/chat` con `streamText`
+6. **Guardrails**: input validation + system prompt + `maxTokens`
+7. **Tool calling**: definisci tool con schema Zod + auth check
+8. **RAG (se serve)**: pgvector + `embed()` + search + inject context
+
+## CHECKLIST
+
+- [ ] Credenziali AI via AI Gateway o variabili d'ambiente — mai hardcoded
+- [ ] Rate limiting per utente (o IP per anonimi)
+- [ ] Input validation + lunghezza massima prima del modello
+- [ ] System prompt con scope chiaro e anti-injection
+- [ ] `maxTokens` sempre impostato
+- [ ] Streaming per risposte lunghe
+- [ ] Errori gestiti: timeout, rate limit provider, risposta malformata
+- [ ] [Se tool calling] Ogni tool verifica auth prima di eseguire
+- [ ] [Se RAG] Citazione fonti nella risposta
+- [ ] [Se Vercel deploy] AI Gateway per OIDC auth e cost tracking
+
+## TABELLA MODELLI
+
+| Caso d'uso | Modello | Costo relativo |
+|------------|---------|----------------|
+| Classificazione, extraction | claude-haiku-4.5 | 1x |
+| Chat, RAG, tool calling | claude-sonnet-4.6 | 12x |
+| Ragionamento complesso | claude-opus-4.6 | 60x |
+| Embedding RAG | text-embedding-3-small | ~0.02x |
+| Vision analisi immagini | claude-sonnet-4.6 | 12x |
+
+## REFERENCES
+
+Per dettagli tecnici completi, leggi:
+- [references/llm-patterns.md] — setup AI SDK v6, streaming chat, tool calling, structured output, RAG con pgvector, rate limiting, guardrails, prompt injection
