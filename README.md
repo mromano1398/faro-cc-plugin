@@ -177,41 +177,9 @@ Meno prompt ingegneria, più lavoro reale.
 
 ## Changelog
 
-### v1.1.0
-- **Nuovo blueprint API** (backend-only): `faro-blueprints/references/api.md` con stack Hono/FastAPI/NestJS, security checklist, REST conventions
-- **Combo stack "SaaS con AI"**: Next.js + Supabase pgvector + Vercel AI SDK + Upstash rate-limit in `faro-stack-advisor/references/recommendations.md`
-- **Classificatore DEV/BEGINNER v2** con lessico di dominio (logistica, sanità, finanza, legale, HR, edilizia, retail, produzione) in `faro-wizard/references/wizard-flow.md`
-- **Componenti tier inline** in `design-system.md` template: rimossa dipendenza runtime da `faro-tier-system` — ora i 4 blocchi Tier sono nei template
-- **Sezione Tier dedicata** nominata in design-system.md
-- **Pattern form standard**: Server Actions + useActionState vs react-hook-form + Zod (Strategia A/B) in `code-style.md` template
-- **Convenzioni "Dove vanno le cose"**: tabella directory in `code-style.md` template (lib/, components/ui, components/filters, ecc.)
-- **Nota tono descrittivo** per mode=adopt in `templates-rules.md`: il generator produce rules descrittive quando adotta progetti esistenti
-- **Filtro rules per tipo progetto**: tabella in `templates-rules.md` che definisce quali regole si applicano a web / mobile / CLI / Python
-- **Mapping placeholder → input** nel generator SKILL.md: 22 placeholder mappati ai campi del wizard
-- **Schema input mode=adopt tipato**: JSON schema in generator SKILL.md per l'handoff adopt → generator
-- **Modalità BEGINNER propagata** nei file generati (CLAUDE.md, docs/MVP.md) con glossario e 5 step procedurali
-- **Prima domanda obbligatoria nel wizard**: "Come si chiama il progetto?" per `nome_progetto`
-- **Metro config per workspace pnpm** in `porting-strategies.md`: config obbligatoria per Next.js → Expo monorepo
-- **Handoff esplicito multipiattaforma**: step 6-8 in `faro-multiplatform/SKILL.md` per generare rules `apps/mobile/`
-- **Sezione "Web vs Mobile: Stripe, IAP e policy store"** in `faro-payments` con anti-pattern
-- **Check tier audit**: `/project:audit` verifica che Tier ≥2 abbia Framer Motion, skeleton, GSAP, Three.js effettivamente installati (flag `TIER_MISMATCH`)
-- **Update dipendenze nel reskin**: `/project:reskin` ora aggiorna `architecture.md` con nuove dipendenze tier, gestisce downgrade con conferma
-- **Cosmetici**: generator SKILL.md dichiara correttamente 10 commands e 33 file, sezione FAQ nel README con 12 domande
-- **Fixed anche i 3 gap alti di v1.0**: regola "componente condiviso" in workflow.md, struttura tabellare moduli in architecture.md, pattern pagine standard in product-guidance.md
+Vedi [CHANGELOG.md](./CHANGELOG.md) per la storia completa delle release.
 
-Totale: 23 fix (3 alti v1.0 + 20 item backlog v1.1), ~750 righe aggiunte su 15 file, 1 nuovo blueprint (api.md), 0 skill modificate nel plugin.json.
-
-### v1.0.0
-- Release iniziale
-- 24 skill (11 orchestrazione + 13 dominio)
-- 31 file generati nel progetto
-- 4 tier di design
-- 80+ tecnologie nel catalogo
-- 7 blueprint architetturali
-- Advisor prodotto con memoria
-- Autopilot con 4 gate di sicurezza
-- Audit anti-AI-slop
-- Debugging sistematico con 5 perché
+Ultima release: **v1.1.0** (2026-04-11) — 23 fix post-release iniziale, nessun breaking change.
 
 ## Licenza
 

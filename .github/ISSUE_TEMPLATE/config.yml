@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Domanda / come si usa
+    url: https://github.com/mromano1398/faro-cc-plugin/discussions
+    about: Per domande generali e discussioni usa GitHub Discussions (se abilitato)

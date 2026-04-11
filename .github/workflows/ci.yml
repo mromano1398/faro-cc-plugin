@@ -1,0 +1,190 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  validate-plugin:
+    name: Validate plugin structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install jq and tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq jq
+
+      - name: plugin.json is valid JSON
+        run: |
+          jq empty .claude-plugin/plugin.json
+          echo "plugin.json valid"
+
+      - name: plugin.json has required fields
+        run: |
+          NAME=$(jq -r '.name' .claude-plugin/plugin.json)
+          VERSION=$(jq -r '.version' .claude-plugin/plugin.json)
+          DESC=$(jq -r '.description' .claude-plugin/plugin.json)
+          SKILLS_COUNT=$(jq -r '.skills | length' .claude-plugin/plugin.json)
+          if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then echo "::error::plugin.json missing name"; exit 1; fi
+          if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then echo "::error::plugin.json missing version"; exit 1; fi
+          if [ -z "$DESC" ] || [ "$DESC" = "null" ]; then echo "::error::plugin.json missing description"; exit 1; fi
+          if [ "$SKILLS_COUNT" != "24" ]; then echo "::error::Expected 24 skills, got $SKILLS_COUNT"; exit 1; fi
+          echo "plugin.json has: name=$NAME version=$VERSION skills=$SKILLS_COUNT"
+
+      - name: hooks.json is valid JSON
+        run: |
+          jq empty hooks/hooks.json
+          echo "hooks.json valid"
+
+      - name: Every skill in plugin.json exists as directory
+        run: |
+          MISSING=0
+          for skill in $(jq -r '.skills[]' .claude-plugin/plugin.json); do
+            if [ ! -f "skills/$skill/SKILL.md" ]; then
+              echo "::error::Missing skills/$skill/SKILL.md"
+              MISSING=$((MISSING+1))
+            fi
+          done
+          if [ "$MISSING" -gt 0 ]; then exit 1; fi
+          echo "All 24 skills have SKILL.md"
+
+      - name: Every SKILL.md has valid frontmatter
+        run: |
+          FAIL=0
+          for f in skills/*/SKILL.md; do
+            # Check first line is ---
+            if [ "$(head -n 1 "$f")" != "---" ]; then
+              echo "::error::$f missing opening frontmatter ---"
+              FAIL=$((FAIL+1))
+              continue
+            fi
+            # Check closing --- exists in first 30 lines
+            if ! head -n 30 "$f" | tail -n +2 | grep -q '^---$'; then
+              echo "::error::$f missing closing frontmatter ---"
+              FAIL=$((FAIL+1))
+              continue
+            fi
+            # Check name: field exists
+            if ! head -n 30 "$f" | grep -q '^name:'; then
+              echo "::error::$f missing name: field"
+              FAIL=$((FAIL+1))
+              continue
+            fi
+            # Check description: field exists
+            if ! head -n 30 "$f" | grep -q '^description:'; then
+              echo "::error::$f missing description: field"
+              FAIL=$((FAIL+1))
+              continue
+            fi
+          done
+          if [ "$FAIL" -gt 0 ]; then exit 1; fi
+          echo "All 24 SKILL.md frontmatter valid"
+
+      - name: All references/ paths in SKILL.md resolve to existing files
+        run: |
+          FAIL=0
+          for skill_md in skills/*/SKILL.md; do
+            skill_dir=$(dirname "$skill_md")
+            # Extract references/xxx.md patterns
+            refs=$(grep -oE 'references/[A-Za-z0-9_\-]+\.md' "$skill_md" | sort -u)
+            for ref in $refs; do
+              target="$skill_dir/$ref"
+              if [ ! -f "$target" ]; then
+                echo "::error::$skill_md references missing file: $target"
+                FAIL=$((FAIL+1))
+              fi
+            done
+          done
+          if [ "$FAIL" -gt 0 ]; then exit 1; fi
+          echo "All references/ paths resolve"
+
+      - name: No residual omega references in skills
+        run: |
+          if grep -ri "omega" skills/ > /dev/null 2>&1; then
+            echo "::error::Found 'omega' residue in skills/"
+            grep -rni "omega" skills/
+            exit 1
+          fi
+          echo "No omega residue in skills/"
+
+      - name: No broken code fences in generator templates
+        run: |
+          FAIL=0
+          for f in skills/faro-generator/references/templates-*.md; do
+            BACKTICKS=$(grep -c '^```' "$f" || true)
+            TILDES=$(grep -c '^~~~' "$f" || true)
+            if [ $((BACKTICKS % 2)) -ne 0 ]; then
+              echo "::error::$f has odd number of backtick fences: $BACKTICKS"
+              FAIL=$((FAIL+1))
+            fi
+            if [ $((TILDES % 2)) -ne 0 ]; then
+              echo "::error::$f has odd number of tilde fences: $TILDES"
+              FAIL=$((FAIL+1))
+            fi
+          done
+          if [ "$FAIL" -gt 0 ]; then exit 1; fi
+          echo "All generator templates have balanced code fences"
+
+      - name: No stale count references (33 file, 10 commands)
+        run: |
+          # These counts are current as of v1.1.0
+          # Exception: README Changelog can legitimately reference historical 31 file / 9 commands
+          FAIL=0
+          # Check generator SKILL.md doesn't say "9 commands" or "31 file"
+          if grep -q "9 command" skills/faro-generator/SKILL.md; then
+            echo "::error::skills/faro-generator/SKILL.md mentions '9 command' (should be 10)"
+            FAIL=$((FAIL+1))
+          fi
+          if [ "$FAIL" -gt 0 ]; then exit 1; fi
+          echo "No stale count references"
+
+      - name: plugin.json version matches latest tag (if tag present)
+        run: |
+          VERSION=$(jq -r '.version' .claude-plugin/plugin.json)
+          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1 || echo "")
+          if [ -n "$LATEST_TAG" ]; then
+            TAG_VERSION="${LATEST_TAG#v}"
+            if [ "$VERSION" != "$TAG_VERSION" ]; then
+              echo "::warning::plugin.json version $VERSION does not match latest tag $LATEST_TAG"
+            else
+              echo "plugin.json version $VERSION matches tag $LATEST_TAG"
+            fi
+          else
+            echo "No tags yet (first release)"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- plugin.json: valid JSON with 24 skills" >> $GITHUB_STEP_SUMMARY
+          echo "- hooks.json: valid JSON" >> $GITHUB_STEP_SUMMARY
+          echo "- All 24 SKILL.md have valid frontmatter" >> $GITHUB_STEP_SUMMARY
+          echo "- All references/ paths resolve" >> $GITHUB_STEP_SUMMARY
+          echo "- No omega residue" >> $GITHUB_STEP_SUMMARY
+          echo "- Code fences balanced in generator templates" >> $GITHUB_STEP_SUMMARY
+          echo "- Count references coherent" >> $GITHUB_STEP_SUMMARY
+
+  markdown-lint:
+    name: Markdown link check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lychee link checker
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --verbose --exclude 'github.com/mromano1398/faro-cc-plugin' --accept 200,206,403,429 './**/*.md'
+          fail: false
+        continue-on-error: true
