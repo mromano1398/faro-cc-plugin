@@ -173,6 +173,15 @@ allowedTools:
    - Stack attuale (da package.json)
    - Route attuali
    - Fase corrente (da .faro/state.md)
+
+6. Verifica decision freshness:
+   Se `.faro/decisions/` esiste:
+   - Per ogni file ADR, estrai i "File coinvolti" e la "Data"
+   - Conta quante volte ciascun file e' stato modificato dopo la data della decisione:
+     `git log --oneline --since="[data]" -- [file_coinvolto] | wc -l`
+   - Se >3 modifiche -> segnala in `.faro/state.md` sezione "Decisioni da rivedere"
+   - NON modificare le decisioni — solo segnalare
+   - Decisioni con stato "deprecata" o "sostituita" non generano alert
 ```
 
 ## 4. faro-advisor.md

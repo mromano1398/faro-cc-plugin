@@ -1,4 +1,4 @@
-# Template Docs + Tracking — 5 file
+# Template Docs + Tracking — 6 file
 
 ## 1. CLAUDE.md (root del progetto)
 
@@ -191,3 +191,53 @@ Log append-only di tutte le azioni significative del progetto.
 **File:** CLAUDE.md, .claude/rules/, .claude/commands/, .claude/agents/, docs/, .faro/
 **Risultato:** OK
 ```
+
+## 7. .faro/decisions/ (ADR — Architecture Decision Records)
+
+Cartella opzionale per documentare decisioni architetturali importanti.
+Creata su richiesta dall'utente, dal wizard/adopt quando rilevano decisioni, o da `/project:explore`.
+
+### Template decisione
+
+```markdown
+# ADR-NNN: [Titolo decisione]
+
+## Data
+[YYYY-MM-DD]
+
+## Stato
+[proposta | accettata | deprecata | sostituita da ADR-NNN]
+
+## Contesto
+[Perche' questa decisione e' stata necessaria? Quale problema risolveva?]
+
+## Decisione
+[Cosa e' stato deciso. Conciso ma completo.]
+
+## Conseguenze
+- **Pro:** [vantaggi]
+- **Contro:** [svantaggi accettati]
+- **Rischi:** [cosa potrebbe andare storto]
+
+## File coinvolti
+[Lista dei file principali toccati da questa decisione — usata per staleness tracking]
+- `src/lib/auth.ts`
+- `src/middleware.ts`
+- `prisma/schema.prisma`
+
+## Alternativa scartata
+[Cosa e' stato valutato ma NON scelto, e perche']
+```
+
+### Staleness tracking
+Il context-updater e `/project:explore` verificano le decisioni:
+- Se i file coinvolti sono stati modificati >3 volte dopo la data della decisione -> la decisione e' potenzialmente stale
+- Se lo stato e' "accettata" ma il codice e' stato riscritto -> suggerisci revisione
+- Le decisioni con stato deprecata/sostituita non generano alert
+
+### Quando creare una decisione
+- Scelta del framework (Next.js vs Astro)
+- Scelta auth (JWT vs session, Supabase vs Clerk)
+- Scelta database (Postgres vs Mongo, Prisma vs Drizzle)
+- Scelta architetturale (monorepo vs multi-repo, server actions vs API routes)
+- Scelta di NON fare qualcosa (es: "non usiamo Redis per ora perche'...")

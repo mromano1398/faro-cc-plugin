@@ -54,6 +54,9 @@ Domande possibili (scegli solo quelle necessarie):
 - Modello di business? (SaaS subscription, one-time, freemium, gratuito)
 - Vincoli/preferenze tecniche? (hosting, DB, auth provider)
 - Budget per servizi? (gratis | <50€/mese | <200€/mese | illimitato)
+- "Ci sono decisioni architetturali importanti gia' prese che vuoi documentare?"
+  -> Se si': crea `.faro/decisions/ADR-001-*.md` per ciascuna
+  -> Se no: skip (le decisioni verranno documentate man mano)
 
 ## Step 4: Proposta unica
 

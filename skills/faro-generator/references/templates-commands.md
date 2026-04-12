@@ -303,21 +303,105 @@ Raggruppa per data. Evidenzia: milestone raggiunte, problemi risolti, decisioni 
 
 ```markdown
 ---
-description: Esplorazione intelligente del codebase — mappa dipendenze, trova pattern, identifica aree critiche.
+description: Esplorazione intelligente del codebase — dependency graph, dead code, coupling nascosto, churn/hotspot, ownership, tech debt, decision freshness.
 ---
 
-# /project:explore
+# /project:explore $ARGUMENTS
 
-Analizza il codebase e genera una mappa:
+Analisi completa del codebase con 8 dimensioni. Se $ARGUMENTS specifica una dimensione
+("explore dead-code", "explore churn"), esegui solo quella. Senza argomenti, esegui tutte.
 
-1. **Dipendenze tra moduli** — chi importa chi?
-2. **File più modificati** — dove si concentra il lavoro? (git log --stat)
-3. **Complessità** — file con più righe, più import, più logica
-4. **Aree scoperte** — file senza test, moduli senza documentazione
-5. **Pattern ricorrenti** — convenzioni emergenti dal codice
-6. **Tech debt** — TODO, FIXME, HACK, workaround nel codice
+## 1. Dependency graph
+Mappa chi importa chi:
+```bash
+grep -rn "^import\|^from.*import\|require(" src/ --include="*.ts" --include="*.tsx" --include="*.py" --include="*.js" | sort
+```
+Output: grafo testuale dei moduli principali con frecce (A -> B = A importa B).
+Segnala: dipendenze circolari (A->B->C->A).
 
-Output come report strutturato con suggerimenti di priorità.
+## 2. Dead code detection
+Trova codice potenzialmente morto:
+```bash
+# Export non usati: cerca ogni "export" e verifica se qualcuno lo importa
+for f in $(find src/ -name "*.ts" -o -name "*.tsx"); do
+  exports=$(grep -oP 'export (function|const|class|type|interface) \K\w+' "$f")
+  for exp in $exports; do
+    count=$(grep -r "$exp" src/ --include="*.ts" --include="*.tsx" -l | grep -v "$f" | wc -l)
+    [ "$count" -eq 0 ] && echo "CANDIDATE: $exp in $f (0 importers)"
+  done
+done
+```
+Ignora file che non hanno semantica di import/export: config, migration, seed, schema,
+page.tsx, layout.tsx, route.ts, middleware.ts, *.d.ts, *.config.*, __init__.py, conftest.py.
+Ignora pattern dinamici: *Plugin, *Handler, *Middleware, *Adapter, register_*, on_*.
+Output: lista di candidati con confidence (alta/media/bassa). MAI dire "e' morto" — dire
+"Possibile dead export" o "Possibile file orfano" (solo candidati).
+
+## 3. Coupling nascosto
+File che cambiano insieme (git log) ma non si importano:
+```bash
+# Trova coppie di file che compaiono spesso nello stesso commit
+git log --pretty=format:"%H" --since="3 months ago" | while read hash; do
+  git show --stat --name-only "$hash" | grep "^src/" | sort
+done
+# Analizza: se A e B compaiono insieme in >3 commit ma grep non trova import tra loro
+# -> accoppiamento nascosto (forse condividono un concetto non esplicito)
+```
+Output: coppie sospette con numero di co-change e motivo possibile.
+
+## 4. Churn / hotspot
+File piu' modificati = probabili hotspot:
+```bash
+git log --pretty=format: --name-only --since="3 months ago" | sort | uniq -c | sort -rn | head -20
+```
+Regola: file con >10% dei commit totali = hotspot. Questi file meritano piu' test e
+piu' attenzione nelle review.
+Output: top 20 file + percentuale commit + suggerimento (piu' test? refactor? split?).
+
+## 5. Ownership mapping
+Chi ha scritto cosa:
+```bash
+for dir in src/*/; do
+  echo "=== $dir ==="
+  git log --pretty=format:"%an" --since="6 months ago" -- "$dir" | sort | uniq -c | sort -rn | head -3
+done
+```
+Output: per ogni modulo, primary owner (chi ha fatto piu' commit).
+Uso: quando tocchi un modulo, il primary owner e' la persona giusta da consultare.
+
+## 6. Tech debt scan
+```bash
+grep -rn "TODO\|FIXME\|HACK\|@todo\|XXX\|WORKAROUND" src/ --include="*.ts" --include="*.tsx" --include="*.py"
+```
+Output: lista raggruppata per file con conteggio. File con >5 TODO = tech debt hotspot.
+
+## 7. Route e link integrity
+```bash
+# Route definite (Next.js App Router)
+find src/app -name "page.tsx" | sed 's|src/app||;s|/page.tsx||'
+# Link usati
+grep -rn 'href="/\|<Link.*to="/\|router.push("/\|navigate("/' src/ --include="*.tsx"
+```
+Segnala: route senza link (pagine raggiungibili solo via URL diretto).
+
+## 8. Decision freshness
+Se esiste `.faro/decisions/`:
+- Lista le decisioni architetturali documentate
+- Per ogni decisione: estrai i "File coinvolti" e la data
+- Conta quante volte ciascun file e' stato modificato dopo la data della decisione:
+  `git log --oneline --since="[data decisione]" -- [file]`
+- Se un file coinvolto e' stato modificato >3 volte dopo la decisione -> FLAG
+  "Decisione potenzialmente stale — i file coinvolti sono cambiati significativamente"
+- Decisioni con stato "deprecata" o "sostituita" non generano alert
+
+Se `.faro/decisions/` non esiste: suggerisci di crearlo con
+"Vuoi documentare le decisioni architetturali? Posso creare .faro/decisions/ con un template."
+
+## Output finale
+Report strutturato con le 8 sezioni. Per ogni sezione:
+- Risultati concreti (numeri reali, non "analisi in corso")
+- Suggerimenti actionable (cosa fare con queste informazioni)
+- Priorita' (CRITICO / IMPORTANTE / INFORMATIVO)
 ```
 
 ## 9. debug.md
@@ -412,6 +496,34 @@ description: Scansiona e rimuove dead code, import/export/dipendenze inutilizzat
    - [ ] Test passano dopo rimozione
 
 6. **Build check finale**: `npm run build && npx tsc --noEmit`
+
+## Dead code analysis (pre-cleanup)
+Prima di rimuovere qualsiasi cosa, analizza con metodi indipendenti dai tool npm:
+
+### Export non usati
+```bash
+for f in $(find src/ -name "*.ts" -o -name "*.tsx"); do
+  for exp in $(grep -oP 'export (function|const|class|type|interface) \K\w+' "$f"); do
+    importers=$(grep -rl "$exp" src/ --include="*.ts" --include="*.tsx" | grep -v "$f" | wc -l)
+    [ "$importers" -eq 0 ] && echo "CANDIDATE: $exp in $f (0 importers)"
+  done
+done
+```
+
+### File senza importers
+```bash
+for f in $(find src/ -name "*.ts" -o -name "*.tsx" | grep -v "page.tsx\|layout.tsx\|route.ts\|middleware.ts"); do
+  basename=$(basename "$f" .tsx | sed 's/.ts$//')
+  importers=$(grep -rl "$basename" src/ --include="*.ts" --include="*.tsx" | grep -v "$f" | wc -l)
+  [ "$importers" -eq 0 ] && echo "CANDIDATE: $f (0 importers, non e' entry point)"
+done
+```
+
+### Regola di sicurezza
+- MAI rimuovere automaticamente — mostra la lista e chiedi conferma
+- Classifica: SAFE (nessun dubbio), PROBABILE (quasi certamente morto), INCERTO (potrebbe essere usato dinamicamente)
+- Rimuovi solo SAFE e PROBABILE-con-conferma
+- Dopo ogni rimozione: `npx tsc --noEmit` per verificare
 
 ## Quando NON fare cleanup
 - Durante sviluppo attivo di una feature

@@ -40,9 +40,11 @@ Test:          [framework test | nessuno]
 
 ## Step 3: Chiedi lacune (max 3 domande)
 
-- "È corretto ciò che ho dedotto? Cosa manca o è sbagliato?"
-- "Priorità: nuove feature / fix bug / uniformare design / lancio?"
-- "Vuoi formalizzare il design com'è, o vuoi cambiarlo?"
+- "E' corretto cio' che ho dedotto? Cosa manca o e' sbagliato?"
+- "Priorita': nuove feature / fix bug / uniformare design / lancio?"
+- "Vuoi formalizzare il design com'e', o vuoi cambiarlo?"
+- "Vedo che il progetto usa [tecnologie rilevate: auth JWT / Prisma / monorepo / ...].
+  Vuoi documentare il perche' di queste scelte in `.faro/decisions/`?"
 
 ## Step 4: Proponi (come wizard Step 4)
 
