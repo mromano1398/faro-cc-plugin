@@ -88,7 +88,7 @@ Invoca `faro-generator` con tutti i parametri raccolti.
 Se l'utente è stato classificato BEGINNER (dal Classificatore v2), passa esplicitamente
 `modalita: "beginner"` al generator. Il generator applica il filtro di "traduzione" ai file
 documentali (CLAUDE.md, docs/MVP.md, docs/PRD.md, docs/roadmap.md, .faro/state.md) usando il
-glossario in `skills/faro-beginner/references/beginner-profiles.md`. Le rules in .claude/rules/
+glossario definito nella skill `faro-beginner` (file `beginner-profiles.md`). Le rules in .claude/rules/
 restano tecniche.
 
 ## Step 6: Avvia costruzione

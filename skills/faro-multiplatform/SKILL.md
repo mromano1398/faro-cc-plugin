@@ -25,7 +25,7 @@ description: |
 4. Se approvato: genera la struttura del progetto target
 5. Configura monorepo se necessario (turborepo o nx)
 6. Genera rules per la nuova piattaforma
-   - Delega a `faro-blueprints/references/mobile.md` (o desktop.md / web.md a seconda del target)
+   - Delega alla skill `faro-blueprints` (blueprint `mobile.md`, `desktop.md` o `web.md` a seconda del target)
    - Invoca `faro-generator` con i parametri:
      - `nome_progetto`: "<nome>-mobile" (o desktop/web)
      - `tipo_progetto`: "mobile" (o "desktop")

@@ -37,6 +37,7 @@ Tier [N] — [nome]. Vedi `.claude/rules/design-system.md`.
 - `/project:explore` — mappa codebase
 - `/project:debug [bug]` — debugging guidato
 - `/project:commit` — commit atomici conventional (no push)
+- `/project:cleanup` — rimuovi dead code e dipendenze inutilizzate
 
 ## Regole importanti
 - Leggi SEMPRE `.claude/rules/` prima di modificare

@@ -2,7 +2,7 @@
 name: faro-generator
 description: |
   Genera TUTTI i file nativi Claude Code nel progetto dell'utente: CLAUDE.md, 11 rules,
-  10 commands, 6 agents, 3 docs, 2 tracking files (totale 33 file). Invocato dal wizard
+  11 commands, 6 agents, 3 docs, 2 tracking files (totale 34 file). Invocato dal wizard
   e dall'adopt. Trigger: invocato da faro-wizard o faro-adopt dopo l'approvazione della proposta
 ---
 
@@ -31,7 +31,7 @@ Ricevi dal wizard/adopt:
 
 1. `CLAUDE.md` — overview progetto
 2. `.claude/rules/` — 11 rule files
-3. `.claude/commands/` — 10 command files
+3. `.claude/commands/` — 11 command files
 4. `.claude/agents/` — 6 agent files
 5. `docs/` — MVP.md, PRD.md, roadmap.md
 6. `.faro/` — state.md, log.md, plans/
@@ -177,7 +177,7 @@ Le RULES (`.claude/rules/*.md`) restano tecniche — sono per Claude, non per l'
 Il generator:
 1. Rileva `modalita: "beginner"` dall'input.
 2. Applica un filtro di "traduzione" ai soli file in `docs/` e `.faro/state.md`, e al `CLAUDE.md`.
-3. Usa il glossario in `skills/faro-beginner/references/beginner-profiles.md` per le sostituzioni.
+3. Usa il glossario definito nella skill `faro-beginner` (file `beginner-profiles.md`) per le sostituzioni.
 4. NON modifica `.claude/rules/` — restano tecniche.
 5. In cima a `CLAUDE.md` e `docs/MVP.md` in modalità beginner, aggiunge una nota:
    "Questo file è scritto in linguaggio semplice per [nome]. La documentazione tecnica completa

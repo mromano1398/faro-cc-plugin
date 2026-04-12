@@ -1,4 +1,4 @@
-# Template Commands — 10 file
+# Template Commands — 11 file
 
 ## 1. reskin.md
 
@@ -368,4 +368,54 @@ Flusso per commit ergonomico e sicuro. NON esegue mai `git push`.
 6. Mostra all'utente il piano di commit (lista gruppi + messaggi) e chiedi conferma
 7. Esegui `git add` mirato (mai `git add .`) e `git commit` per ogni gruppo
 8. NON eseguire `git push`. Se l'utente vuole push, lo chiederà esplicitamente.
+```
+
+## 11. cleanup.md
+
+```markdown
+---
+description: Scansiona e rimuove dead code, import/export/dipendenze inutilizzate con workflow sicuro per step.
+---
+
+# /project:cleanup
+
+## Flusso
+
+1. **Scan** — Esegui strumenti di detection:
+   ```bash
+   npx knip                                    # File, export, dipendenze inutilizzate
+   npx depcheck                                # Dipendenze npm inutilizzate
+   npx ts-prune                                # Export TypeScript inutilizzati
+   npx eslint . --report-unused-disable-directives  # Direttive eslint inutili
+   ```
+   Se un tool non è installato, skippa con nota.
+
+2. **Categorizza** per rischio:
+   | Categoria | Rischio | Esempi |
+   |-----------|---------|--------|
+   | SAFE | Basso | Dipendenze npm inutilizzate, export non referenziati |
+   | CAREFUL | Medio | File apparentemente inutilizzati (verifica dynamic import) |
+   | RISKY | Alto | API pubbliche, componenti con import dinamico |
+
+3. **Mostra report** all'utente con lista categorizzata. Chiedi conferma prima di procedere.
+
+4. **Rimuovi in ordine sicuro** (sempre in questo ordine):
+   a. **Dipendenze** npm inutilizzate → test → commit
+   b. **Export** inutilizzati → test → commit
+   c. **File** inutilizzati (solo SAFE) → test → commit
+   d. **Duplicati** (scegli implementazione migliore) → test → commit
+
+5. **Safety checklist** per ogni elemento rimosso:
+   - [ ] Tool di detection conferma inutilizzato
+   - [ ] Grep conferma zero referenze (inclusi dynamic import)
+   - [ ] Non fa parte di API pubblica
+   - [ ] Test passano dopo rimozione
+
+6. **Build check finale**: `npm run build && npx tsc --noEmit`
+
+## Quando NON fare cleanup
+- Durante sviluppo attivo di una feature
+- Prima di un deploy in produzione
+- Senza copertura test adeguata
+- Su codice che non capisci
 ```

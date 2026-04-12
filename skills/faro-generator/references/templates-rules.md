@@ -156,6 +156,18 @@ Il generator inlinea qui le regole di animazione del tier scelto:
 ## Sicurezza per tipo
 [SEZIONE SPECIFICA PER TIPO — es: RBAC per gestionale, tenant isolation per SaaS]
 
+## Quick-scan pattern di rischio
+
+| Pattern | Severità | Fix |
+|---------|----------|-----|
+| Segreti hardcoded nel codice | CRITICO | Usa `process.env` |
+| SQL concatenato con input utente | CRITICO | Query parametrizzate |
+| `innerHTML` con dati utente | ALTO | Usa `textContent` o DOMPurify |
+| `fetch(userProvidedUrl)` | ALTO | Whitelist domini consentiti |
+| Endpoint senza auth check | CRITICO | Aggiungi middleware auth |
+| Endpoint senza rate limiting | ALTO | Aggiungi rate limiter |
+| Shell command con user input | CRITICO | Usa API safe o `execFile` |
+
 ## Regole assolute
 - MAI SQL raw con interpolazione — usa query parametriche
 - MAI esporre stack trace in produzione
@@ -193,6 +205,13 @@ Usa `@/` alias per import da src/
 - Early return per ridurre nesting
 - Custom hook per logica riutilizzabile
 - Zod schema come single source of truth per tipi e validazione
+
+## Async patterns
+- MAI `async` con `forEach` → usa `for...of` o `Promise.all(array.map(...))`
+- `await` sequenziali su operazioni indipendenti → `Promise.all`
+- Promise rejection non gestita → aggiungi `await` con try/catch o `.catch()`
+- Non-null assertion `value!` senza guard → aggiungi runtime check
+- `as` cast che bypassa type check → fixa il tipo alla sorgente
 
 ## Git
 - Conventional commits: feat:, fix:, chore:, refactor:, docs:, test:
@@ -701,11 +720,46 @@ isolati il worktree è opzionale.
 Il contesto è una risorsa finita. Monitorarlo evita allucinazioni e
 dimenticanze a metà piano.
 
+**Regola "misura-ottimizza-confronta"**
+Prima di ottimizzare: misura lo stato attuale. Dopo: confronta i delta.
+Non ottimizzare alla cieca.
+
+**Stima token**
+- Prosa: parole x 1.3
+- Codice: caratteri / 4
+- Ogni tool MCP: ~500 token per schema
+- Usa queste stime per capire quanto contesto stai consumando
+
 **Segnali di contesto pieno (70%+)**
 - Le risposte diventano meno dettagliate o saltano dettagli chiesti prima
 - Dimentichi decisioni prese nei primi messaggi della sessione
 - Ripeti letture di file già letti in questa sessione
 - Perdi traccia dei task completati vs pendenti
+
+**Quando fare /compact**
+
+| Transizione | Compact? | Motivo |
+|-------------|----------|--------|
+| Ricerca → Pianificazione | Sì | Il contesto di ricerca è voluminoso; il piano è il distillato |
+| Pianificazione → Implementazione | Sì | Il piano è nei file; libera contesto per codice |
+| Implementazione → Test | Forse | Tieni se i test referenziano codice recente |
+| Debug → Nuova feature | Sì | Le tracce di debug inquinano il contesto |
+| A metà implementazione | No | Perdere nomi variabili e path è costoso |
+| Dopo un approccio fallito | Sì | Pulisci il ragionamento morto prima di riprovare |
+
+**Cosa sopravvive alla compaction**
+
+| Persiste | Si perde |
+|----------|----------|
+| CLAUDE.md | Ragionamento intermedio |
+| TodoWrite task list | Contenuti file letti |
+| File su disco | Storico tool call |
+| Stato git | Preferenze utente dette a voce |
+
+**Riduzione proattiva del contesto**
+- Leggi solo le sezioni di file che servono (offset/limit), non file interi
+- Non rileggere file già letti nella stessa sessione senza motivo
+- Consolida i risultati di ricerca: estrai ciò che serve, non accumulare output grezzi
 
 **Prima di proporre /compact**
 1. Aggiorna `.faro/state.md` con: fase attuale, piano attivo, ultimo task completato, recovery point

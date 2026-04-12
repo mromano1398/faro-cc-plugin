@@ -33,6 +33,53 @@ STOP. Genera report:
 - Cosa è stato provato
 - Possibili cause
 -> L'agente principale lo mostrerà all'utente.
+
+## Errori comuni TypeScript/Next.js — Fix rapidi
+
+| Errore | Fix minimale |
+|--------|-------------|
+| `implicitly has 'any' type` | Aggiungi type annotation esplicita |
+| `Object is possibly 'undefined'` | Usa optional chaining `?.` o null check |
+| `Property does not exist on type` | Aggiungi a interface o usa `?` |
+| `Cannot find module` | Verifica tsconfig paths, installa pacchetto, fixa import |
+| `Type 'X' is not assignable to type 'Y'` | Converti tipo o correggi definizione |
+| `Hook called conditionally` | Sposta tutti gli hook al top level del componente |
+| `'await' expression only allowed within async` | Aggiungi `async` alla funzione |
+| `Module not found: Can't resolve` | Installa dipendenza mancante o fixa path |
+
+## Comandi diagnostici (esegui in ordine)
+
+```bash
+npx tsc --noEmit --pretty              # Tutti gli errori di tipo
+npx tsc --noEmit --pretty --incremental false  # Forza check completo
+npm run build                          # Build completa
+npx eslint . --ext .ts,.tsx            # Lint
+```
+
+## Recovery cache corrotta
+
+```bash
+rm -rf .next node_modules/.cache && npm run build  # Pulisci cache
+rm -rf node_modules package-lock.json && npm install  # Reinstalla tutto
+npx eslint . --fix                     # Auto-fix lint
+```
+
+## Security scan rapido (dopo build verde)
+
+```bash
+grep -r "console\.log" src/ --include="*.ts" --include="*.tsx" -l  # Log in produzione
+grep -rn "TODO\|FIXME\|HACK" src/ --include="*.ts" --include="*.tsx"  # Residui debug
+grep -rn "password\|secret\|api_key" src/ --include="*.ts" --include="*.tsx" -i  # Possibili segreti hardcoded
+```
+Se trovi segreti hardcoded → segnala come CRITICO prima di procedere.
+
+## Regola fix minimale
+
+Ogni fix deve:
+- Cambiare meno del 5% del file interessato
+- NON modificare architettura o logica
+- Essere verificato con `npx tsc --noEmit` dopo ogni fix
+- Procedere per priorità: build-blocking → type errors → warnings
 ```
 
 ## 2. design-propagator.md
@@ -328,13 +375,27 @@ Se c'è un piano attivo:
 
 ## Stadio 2 — Qualità codice
 
-Per ogni file modificato:
+### Confidence filtering
+- Reporta solo se >80% sicuro che sia un problema reale
+- Salta preferenze stilistiche (tranne violazioni convenzioni del progetto)
+- Salta issue in codice non modificato (tranne CRITICAL security)
+- Consolida issue simili ("5 funzioni senza error handling" → un solo finding)
+- Prioritizza issue che causano bug, vulnerabilità, data loss
+
+### Checklist per file modificato
 - TypeScript: tipi corretti, no `any`, strict
 - Naming: coerente con code-style.md
 - Sicurezza: validazione input, auth check, IDOR
 - Design: coerente con design-system.md
 - Performance: no import inutili, no re-render
 - DRY: codice duplicato?
+
+### Check specifici per codice AI-generated
+Se il codice sembra generato da AI (pattern ripetitivi, commenti ovvi):
+1. Verifica regressioni comportamentali e gestione edge case
+2. Controlla assunzioni di sicurezza e trust boundaries
+3. Cerca coupling nascosto o drift architetturale rispetto alle rules
+4. Segnala complessità non necessaria
 
 ## Output
 
@@ -346,6 +407,31 @@ Severità:
 - 🔴 CRITICO — blocca (sicurezza, crash, data loss)
 - 🟡 IMPORTANTE — da fixare prima di merge
 - 🟢 MINORE — miglioramento opzionale
+
+## Stadio 3 — Review schema DB (se il progetto ha database)
+
+### Anti-pattern da flaggare
+| Anti-pattern | Severità | Fix |
+|-------------|----------|-----|
+| Tabella senza PK | 🔴 CRITICO | Aggiungi primary key |
+| FK senza indice | 🟡 IMPORTANTE | `CREATE INDEX` sulla colonna FK |
+| Query N+1 (loop di SELECT) | 🟡 IMPORTANTE | Usa JOIN o batch fetch |
+| SQL raw senza parametrizzazione | 🔴 CRITICO | Query parametriche |
+| `SELECT *` in produzione | 🟡 IMPORTANTE | Seleziona solo colonne necessarie |
+| Migration non reversibile | 🟡 IMPORTANTE | Usa pattern expand-contract |
+| `timestamp` senza timezone | 🟢 MINORE | Usa `timestamptz` |
+| `varchar(255)` senza motivo | 🟢 MINORE | Usa `text` |
+
+### Pattern RLS (Supabase)
+- Verifica che RLS sia abilitato su tabelle multi-tenant
+- Policy devono usare `(SELECT auth.uid())` con SELECT wrapper (non `auth.uid()` diretto)
+- Colonne usate nelle policy RLS devono avere indici
+
+### Migration safety
+- Nuove colonne su tabelle esistenti: nullable o con default (mai NOT NULL senza default)
+- Indici su tabelle grandi: `CREATE INDEX CONCURRENTLY`
+- Rinominare colonne: pattern expand-contract (aggiungi nuova → backfill → migra app → rimuovi vecchia)
+- Schema e data migration sempre separate
 
 ## Memoria
 Ricorda i pattern problematici del progetto tra le sessioni.
