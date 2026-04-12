@@ -179,7 +179,7 @@ Meno prompt ingegneria, più lavoro reale.
 
 Vedi [CHANGELOG.md](./CHANGELOG.md) per la storia completa delle release.
 
-Ultima release: **v1.1.0** (2026-04-11) — 23 fix post-release iniziale, nessun breaking change.
+Ultima release: **v1.2.0** (2026-04-12) — integrazione pattern ECC, nuovo /project:cleanup, CI GitHub Actions, FAQ, CONTRIBUTING.
 
 ## Licenza
 

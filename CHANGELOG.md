@@ -9,6 +9,33 @@ e il versionamento segue [Semantic Versioning](https://semver.org/lang/it/).
 
 Nessuna modifica al momento.
 
+## [1.2.0] - 2026-04-12
+
+### Aggiunto
+- Integrazione pattern da everything-claude-code (ECC): 11 pattern selezionati da 47 agent e 181 skill
+- **build-checker potenziato**: tabella 8 errori comuni TS/Next.js con fix mirati, comandi diagnostici, recovery cache (da ECC build-error-resolver)
+- **workflow.md context awareness espanso**: stima token budget, tabella quando fare /compact, riduzione proattiva contesto (da ECC harness-optimizer)
+- **faro-autopilot stuck detection avanzata**: protocollo escalation 4 livelli (retry→decompose→skip→stop), timeout per tipo task, De-Sloppify pattern (da ECC loop-operator)
+- **Nuovo comando `/project:cleanup`**: dead code scan, unused imports/exports/deps, categorizzazione rischio, ordine rimozione sicuro (da ECC refactor-cleaner)
+- **code-reviewer Stadio 3 — review schema DB**: anti-pattern (N+1, no indici FK, raw SQL), RLS Supabase, migration safety expand-contract (da ECC database-reviewer)
+- Confidence filtering nel code-reviewer (evita segnalare issue incerte)
+- AI-generated code addendum nel code-reviewer (rileva codice probabilmente generato)
+- TypeScript async patterns in code-style.md (no floating promises, error boundaries)
+- Security scan rapido nel build-checker (.env esposti, eval(), innerHTML)
+- Quick-scan pattern di rischio in security.md (path traversal, prototype pollution)
+- CHANGELOG.md dedicato in formato keep-a-changelog
+- CONTRIBUTING.md con filosofia, tipi di contributo, convenzioni commit, policy semver
+- Issue templates GitHub (bug report, feature request, config)
+- CI GitHub Actions con 2 job (validate-plugin, markdown-lint)
+- Sezione FAQ nel README con 12 domande
+
+### Modificato
+- Generator SKILL.md: dichiara 11 commands e 34 file totali
+- README.md: puntatore a CHANGELOG.md (changelog non più inline), conteggi aggiornati
+
+### Corretto
+- 3 broken cross-skill references (path `references/xxx.md` cross-skill interpretati come interni dal CI)
+
 ## [1.1.0] - 2026-04-11
 
 ### Aggiunto
@@ -73,6 +100,7 @@ Totale: 23 fix (3 alti v1.0 + 20 item backlog v1.1), ~750 righe aggiunte su 15 f
 - Hook SessionStart per caricamento stato automatico
 - Supporto italiano completo
 
-[Unreleased]: https://github.com/mromano1398/faro-cc-plugin/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/mromano1398/faro-cc-plugin/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/mromano1398/faro-cc-plugin/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mromano1398/faro-cc-plugin/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/mromano1398/faro-cc-plugin/releases/tag/v1.0.0
